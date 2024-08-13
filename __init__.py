@@ -12,7 +12,6 @@ model_name = "distilbert-base-uncased"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModel.from_pretrained(model_name)
 
-
 # Function to compute text embeddings using the pre-trained model
 def get_embeddings(text):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
@@ -20,7 +19,6 @@ def get_embeddings(text):
         outputs = model(**inputs)
     embeddings = outputs.last_hidden_state.mean(dim=1).squeeze().numpy()
     return embeddings
-
 
 # Function to update the Neo4j database with abstract embeddings
 def update_abstract_embeddings():
@@ -47,11 +45,9 @@ def update_abstract_embeddings():
 
     st.success("Abstract embeddings have been updated in the Neo4j database.")
 
-
 # Function to calculate cosine similarity between two embeddings
 def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
-
 
 # Function to query the KG by comparing input embeddings with abstract embeddings
 def query_kg_by_abstract(input_embeddings, threshold=0.9):
@@ -87,7 +83,6 @@ def query_kg_by_abstract(input_embeddings, threshold=0.9):
 
     return matching_papers
 
-
 # Display results in Streamlit
 def display_results(results):
     if not results:
@@ -100,7 +95,6 @@ def display_results(results):
             st.write(f"**Authors:** {', '.join(result['authors'])}")
             st.write("---")
 
-
 # Streamlit App
 def main():
     st.title("Academic Research Assistant")
@@ -112,17 +106,24 @@ def main():
 
     user_input = st.text_area("Enter your research idea:")
 
+    # Input Constraints
+    min_length = 20
+    required_keywords = ["machine learning", "neural networks"]
+
     if st.button("Find Relevant Research"):
-        if user_input:
+        if not user_input:
+            st.write("Please enter a research idea to start the search.")
+        elif len(user_input) < min_length:
+            st.write(f"Your input must be at least {min_length} characters long.")
+        elif not any(keyword in user_input.lower() for keyword in required_keywords):
+            st.write(f"Your input must include one of the following keywords: {', '.join(required_keywords)}")
+        else:
             st.write("Analyzing your input...")
             input_embeddings = get_embeddings(user_input)
 
             st.write("Searching for relevant papers...")
             results = query_kg_by_abstract(input_embeddings)
             display_results(results)
-        else:
-            st.write("Please enter a research idea to start the search.")
-
 
 if __name__ == "__main__":
     main()
